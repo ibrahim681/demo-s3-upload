@@ -7,28 +7,53 @@ fileForm.addEventListener("submit", async event => {
     const file = fileInput.files[0]
     console.log(file)
 
-    const body = {
+    // Example POST method implementation:
+    async function postData(url = "", data = {}) {
+        // Default options are marked with *
+        const response = await fetch(url, {
+            method: "POST", // *GET, POST, PUT, DELETE, etc.
+            mode: "cors", // no-cors, *cors, same-origin
+            cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
+            credentials: "same-origin", // include, *same-origin, omit
+            headers: {
+                "Content-Type": "application/json",
+                // 'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            redirect: "follow", // manual, *follow, error
+            referrerPolicy: "no-referrer", // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+            body: JSON.stringify(data), // body data type must match "Content-Type" header
+        });
+        return response.json(); // parses JSON response into native JavaScript objects
+    }
+
+    postData("http://127.0.0.1:3001/api/note/s3", {
         type: file.type,
         key: file.name,
         s3method: "putObject"
-    }
+    }).then(async (data) => {
+        console.log(data); // JSON data parsed by `data.json()` call
+        await fetch(data.url, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "multipart/form-data"
+            },
+            body: file
+        })
+    });
 
-    // get secure url from our server
-    // const { url } = await fetch("http://127.0.0.1:3001/api/note/s3", {method: "POST", body}).then(res => res.json(), err => console.log(err))
-    // console.log(url)
+    setTimeout(()=> console.log("waiting..."), 5000)
 
-    // post the image direclty to the s3 bucket
-    await fetch("https://qjmainlessonbucket.s3.amazonaws.com/%28Chapter%2018%29%20%28Version%201%29%20%28Verses%201-30%29%20%282%29.pdf?Content-Type=application%2Fpdf&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAUXRUTBCRUXWJMA6A%2F20240208%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20240208T200243Z&X-Amz-Expires=60&X-Amz-Signature=48bd343080c777efce8179a24083d03158560d23eead8edb54310e361ec40ece&X-Amz-SignedHeaders=host", {
-        method: "PUT",
-        headers: {
-            "Content-Type": "multipart/form-data"
-        },
-        body: file
-    })
-
-    // const fileUrl = url.split('?')[0]
-    // console.log(fileUrl)
-
-    // post requst to my server to store any extra data
-
+    // upload success??
+    postData("http://127.0.0.1:3001/api/note", {
+        bucketName: "qjmainlessonbucket",
+        key: file.name,
+        data: {
+            fileName: file.name,
+            fileSize: file.size,
+            url: `https://qjmainlessonbucket.s3.amazonaws.com/${file.name}`,
+            dateModified: new Date(),
+        }
+    }).then(async (data) => {
+        console.log(data);
+    });
 })
